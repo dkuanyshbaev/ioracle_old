@@ -1,16 +1,10 @@
 use crate::errors::IOracleResult;
 use crate::models::{Answer, Hexagram, Trigram};
-use crate::{iching, Config, Db};
+use crate::{iching, wires, Config, Db};
 use rocket::request::Form;
 use rocket::response::Redirect;
 use rocket::State;
 use rocket_contrib::templates::Template;
-use std::io::{prelude::*, BufRead, BufReader};
-use std::os::unix::net::{UnixListener, UnixStream};
-use std::{fs, path::Path, process};
-
-const IORACLE_SEND: &str = "/tmp/ioracle.send";
-const IORACLE_RETURN: &str = "/tmp/ioracle.return";
 
 #[derive(FromForm)]
 pub struct Data {
@@ -50,49 +44,19 @@ pub fn question(
     config: State<Config>,
     data: Form<Data>,
 ) -> IOracleResult<Redirect> {
-    if let Ok(mut stream) = UnixStream::connect(IORACLE_SEND) {
-        stream.write_all(b"read")?;
-    };
+    let (hexagram, related) = wires::reading();
+    let new_answer = Answer::new(&data.email, &data.question, &hexagram, &related);
+    let answer_id = new_answer.id.clone();
+    Answer::insert(&connection, &new_answer)?;
+    Answer::send(
+        &data.email,
+        &data.question,
+        &config.username,
+        &config.password,
+        &iching::full_answer(&connection, new_answer)?,
+    );
 
-    if Path::new(IORACLE_RETURN).exists() {
-        if let Err(error) = fs::remove_file(IORACLE_RETURN) {
-            println!("{}", error);
-            process::exit(1);
-        };
-    }
-
-    let mut location = "/".to_string();
-
-    if let Ok(listener) = UnixListener::bind(IORACLE_RETURN) {
-        for stream in listener.incoming() {
-            if let Ok(stream) = stream {
-                if let Some(result) = BufReader::new(stream).lines().nth(0) {
-                    if let Ok(result) = result {
-                        let result: Vec<&str> = result.split("|").collect();
-                        let new_answer = Answer::new(
-                            &data.email,
-                            &data.question,
-                            &result[0].to_string(),
-                            &result[1].to_string(),
-                        );
-
-                        Answer::insert(&connection, &new_answer)?;
-                        location = format!("/answer/{}", new_answer.id);
-                        Answer::send(
-                            &data.email,
-                            &data.question,
-                            &config.username,
-                            &config.password,
-                            &iching::full_answer(&connection, new_answer)?,
-                        );
-                    }
-                }
-                break;
-            }
-        }
-    };
-
-    Ok(Redirect::to(location))
+    Ok(Redirect::to(format!("/answer/{}", answer_id)))
 }
 
 #[get("/answer/<id>")]

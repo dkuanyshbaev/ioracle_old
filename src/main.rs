@@ -18,6 +18,7 @@ mod lang;
 mod models;
 mod schema;
 mod views;
+mod wires;
 
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
