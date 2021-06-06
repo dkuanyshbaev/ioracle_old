@@ -33,21 +33,27 @@ pub struct FullAnswer {
     pub generative_answer: String,
 }
 
+// home page with question form
 #[get("/")]
 pub fn index() -> Template {
     Template::render("index", NoContext {})
 }
 
+// the question goes here
 #[post("/question", data = "<data>")]
 pub fn question(
     connection: Db,
     config: State<Config>,
     data: Form<Data>,
 ) -> IOracleResult<Redirect> {
+    // get reading
     let (hexagram, related) = wires::reading();
+    // create new answer
     let new_answer = Answer::new(&data.email, &data.question, &hexagram, &related);
     let answer_id = new_answer.id.clone();
+    // save answer
     Answer::insert(&connection, &new_answer)?;
+    // send an email with the answer
     Answer::send(
         &data.email,
         &data.question,
@@ -59,6 +65,7 @@ pub fn question(
     Ok(Redirect::to(format!("/answer/{}", answer_id)))
 }
 
+// here we display the answer
 #[get("/answer/<id>")]
 pub fn answer(connection: Db, id: String) -> IOracleResult<Template> {
     let answer = Answer::get_by_id(&connection, id)?;

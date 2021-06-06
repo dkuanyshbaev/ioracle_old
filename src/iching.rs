@@ -3,6 +3,7 @@ use crate::models::{Answer, Hexagram, Trigram};
 use crate::views::FullAnswer;
 use rocket_contrib::databases::diesel::SqliteConnection;
 
+// here we build a full answer for questions
 pub fn full_answer(connection: &SqliteConnection, answer: Answer) -> IOracleResult<FullAnswer> {
     let hexagram_binary = answer.hexagram.clone();
     let related_binary = answer.related.clone();
@@ -50,6 +51,7 @@ pub fn full_answer(connection: &SqliteConnection, answer: Answer) -> IOracleResu
     })
 }
 
+// here we build generative answer
 fn generative_answer(hexagram: &String) -> String {
     println!("{}", hexagram);
 

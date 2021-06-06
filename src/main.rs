@@ -27,6 +27,7 @@ use std::{env, process};
 #[database("ioracle")]
 pub struct Db(diesel::SqliteConnection);
 
+// main config with email credentials
 pub struct Config {
     pub username: String,
     pub password: String,
@@ -40,6 +41,8 @@ impl Config {
     }
 }
 
+// here we read the config and start the rocket server
+// the config reads from environmental variables
 fn main() {
     let config = Config::new().unwrap_or_else(|err| {
         println!("{}", err);

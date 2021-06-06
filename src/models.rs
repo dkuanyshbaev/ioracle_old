@@ -90,6 +90,7 @@ impl Answer {
             .execute(connection)
     }
 
+    // thes is the email sender it uses passord and username from config
     pub fn send(
         email: &String,
         _question: &String,

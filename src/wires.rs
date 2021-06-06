@@ -5,9 +5,12 @@ use std::time::{Duration, SystemTime};
 const BIAS: f32 = 500.0;
 const THRESHOLD: f32 = 10.0;
 
+// the main reading function
+// here we interact with all hardware
 pub fn reading() -> (String, String) {
     println!("New reading...");
 
+    // get the first 3 lines
     let line1 = read(2);
     println!("line1 = {}", line1);
 
@@ -17,10 +20,12 @@ pub fn reading() -> (String, String) {
     let line3 = read(2);
     println!("line3 = {}", line3);
 
+    // get related lines with different time delta
     let related_line1 = read(1);
     let related_line2 = read(1);
     let related_line3 = read(1);
 
+    // get the next 3 lines
     let line4 = read(2);
     println!("line4 = {}", line4);
 
@@ -30,11 +35,14 @@ pub fn reading() -> (String, String) {
     let line6 = read(2);
     println!("line6 = {}", line6);
 
+    // get next related lines with different time delta
     let related_line4 = read(1);
     let related_line5 = read(1);
     let related_line6 = read(1);
 
+    // build the hexagram
     let hexagram = format!("{}{}{}{}{}{}", line1, line2, line3, line4, line5, line6);
+    // build related hexagram
     let related_original = format!(
         "{}{}{}{}{}{}",
         related_line1, related_line2, related_line3, related_line4, related_line5, related_line6
@@ -47,7 +55,10 @@ pub fn reading() -> (String, String) {
     (hexagram, related)
 }
 
+// here we read data from pip
+// the function accepts time in seconds to read
 pub fn read(delta: u64) -> u8 {
+    // read the pip data
     let data = read_the_pip(delta);
     println!("data: {:?}", data);
 
@@ -92,6 +103,8 @@ pub fn read(delta: u64) -> u8 {
     }
 }
 
+// here we read pip data from the serial port
+// install arduino ide + teense support to read from serial port on rpi
 pub fn read_the_pip(delta: u64) -> Vec<i32> {
     let s = SerialPortSettings {
         baud_rate: 9600,
@@ -125,6 +138,7 @@ pub fn read_the_pip(delta: u64) -> Vec<i32> {
     data
 }
 
+// serialize the data from serial port
 pub fn get_val(buf: &[u8]) -> i32 {
     let mut output = 0;
     let serial_data = std::str::from_utf8(buf).unwrap();
@@ -141,6 +155,7 @@ pub fn get_val(buf: &[u8]) -> i32 {
     output
 }
 
+// get related lines from hexagram and related hexagram
 pub fn get_related(h: &String, r: &String) -> String {
     let mut result = "".to_string();
     for (x, y) in h.chars().zip(r.chars()) {
